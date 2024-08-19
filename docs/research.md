@@ -19,3 +19,5 @@
 10. (Docker minio)[https://hub.docker.com/r/bitnami/minio]
 
 11. (Dropbox system design | Google drive system design | System design file share and upload)[https://www.youtube.com/watch?v=U0xTu6E2CT8]
+
+12. (Kafka cuslter k8s)[https://kow3ns.github.io/kubernetes-kafka/manifests/]
