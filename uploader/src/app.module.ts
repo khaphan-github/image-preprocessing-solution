@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { MinioController } from './infrastructure/minio/minio.controller';
-import { MinioModule } from './infrastructure/minio/minio.module';
+import { MinioController } from './infrastructure/persistent/minio/minio.controller';
+import { MinioModule } from './infrastructure/persistent/minio/minio.module';
 import { ConfigModule } from '@nestjs/config';
-import { envValidationSchema } from './infrastructure/minio/env.validation';
-import { MongoDBProvider } from './infrastructure/mongodb/mongodb.provider';
+import { envValidationSchema } from './infrastructure/persistent/minio/env.validation';
+import { MongoDBProvider } from './infrastructure/persistent/mongodb/mongodb.provider';
 
 @Module({
   imports: [

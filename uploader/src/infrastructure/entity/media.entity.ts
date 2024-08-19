@@ -6,7 +6,7 @@ export enum MediaType {
   OTHER,
 }
 
-export class MediaModel {
+export class MediaEntity {
   private idValue: string;
   private mediaNameValue: string;
   private createdTimeValue: Date;

@@ -21,3 +21,10 @@
 11. (Dropbox system design | Google drive system design | System design file share and upload)[https://www.youtube.com/watch?v=U0xTu6E2CT8]
 
 12. (Kafka cuslter k8s)[https://kow3ns.github.io/kubernetes-kafka/manifests/]
+
+13. (DROPBOX system design 1)[https://astikanand.github.io/techblogs/high-level-system-design/design-dropbox]
+
+14. (DROPBOX system design 2)[https://www.hellointerview.com/learn/system-design/answer-keys/dropbox]
+  - Chunk large file.
+
+15.
