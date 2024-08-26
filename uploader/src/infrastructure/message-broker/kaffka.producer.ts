@@ -9,8 +9,8 @@ export class KafkaProducerService {
 
   constructor() {
     const kaffkaClientId = process.env.KAFFKA_CLIENT_ID;
-    const kaffkaService = process.env.KAFFKA_SERVICE;
-
+    // const kaffkaService = process.env.KAFFKA_SERVICE;
+    const kaffkaService = 'kafka1:19092';
     console.log(
       `KafkaClientID: ${kaffkaClientId} - KafkaService: ${kaffkaService}`,
     );
@@ -18,7 +18,6 @@ export class KafkaProducerService {
       // TOTO: Load in environment
       this.producer = new Kafka({
         brokers: [kaffkaService], // Update with your Kafka broker's address
-        retry: { retries: 1 },
         clientId: 'kaf-kafka-client-prodcer',
       }).producer();
 
@@ -52,9 +51,11 @@ export class KafkaProducerService {
         return this.producer.send(producerRecord);
       } else {
         console.log(`=> Send message to kafka but not connected yet`);
+        return Promise.resolve(false);
       }
     } catch (error) {
-      console.log(`=> Send message to kafka but not connected yet`);
+      console.log(`=> Send message to kafka but not connected yet ${error}`);
+      return Promise.resolve(false);
     }
   }
 }

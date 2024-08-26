@@ -26,6 +26,14 @@ services:
     volumes:
       - data1-1:/data1
       - data1-2:/data2
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'     
+          memory: '512M'   
+        reservations:
+          cpus: '0.25'     
+          memory: '256M' 
 
   minio2:
     <<: *minio-common
@@ -33,6 +41,14 @@ services:
     volumes:
       - data2-1:/data1
       - data2-2:/data2
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'     
+          memory: '512M'   
+        reservations:
+          cpus: '0.25'     
+          memory: '256M' 
 
   minio3:
     <<: *minio-common
@@ -40,6 +56,14 @@ services:
     volumes:
       - data3-1:/data1
       - data3-2:/data2
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'     
+          memory: '512M'   
+        reservations:
+          cpus: '0.25'     
+          memory: '256M' 
 
   minio4:
     <<: *minio-common
@@ -47,6 +71,15 @@ services:
     volumes:
       - data4-1:/data1
       - data4-2:/data2
+
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'     
+          memory: '512M'   
+        reservations:
+          cpus: '0.25'     
+          memory: '256M' 
 
   nginx:
     image: nginx:1.19.2-alpine
@@ -61,7 +94,14 @@ services:
       - minio2
       - minio3
       - minio4
-
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'     
+          memory: '512M'   
+        reservations:
+          cpus: '0.25'     
+          memory: '256M' 
   mongo:
     image: mongo
     environment:
@@ -70,7 +110,16 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: root
     ports:
       - 27017:27017
-
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'     
+          memory: '512M'   
+        reservations:
+          cpus: '0.25'     
+          memory: '256M' 
+    networks:
+      - my-network 
   zoo1:
     image: confluentinc/cp-zookeeper
     hostname: zoo1
@@ -81,6 +130,16 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_SERVER_ID: 1
       ZOOKEEPER_SERVERS: zoo1:2888:3888
+    deploy:
+      resources:
+        limits:
+          cpus: '1'     
+          memory: '512M'   
+        reservations:
+          cpus: '0.5'     
+          memory: '256M' 
+    networks:
+      - my-network 
 
   kafka1:
     image: confluentinc/cp-kafka
@@ -105,8 +164,85 @@ services:
       KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
       KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
       KAFKA_CREATE_TOPICS: "upload-image-resolution:1:1"
+      
     depends_on:
       - zoo1
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'     
+          memory: '512M'   
+        reservations:
+          cpus: '0.25'     
+          memory: '256M' 
+    networks:
+      - my-network 
+  fastapi-app:
+    build:
+      context: ../../processing   # Path to the directory containing the Dockerfile
+      dockerfile: Dockerfile 
+    image: fastapi-app:latest
+    container_name: fastapi_app_container
+    depends_on:
+      - kafka1
+    ports:
+      - "8999:8000"
+    environment:
+      IMAGE_RESOLUTION_MB_TOPIC: upload-image-resolution
+      IMAGE_RESOLUTION_MB_BOOTSTRAP_SERVERS: kafka1:19092
+      IMAGE_RESOLUTION_MB_GROUP_ID: my-group
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'     
+          memory: '512M'   
+        reservations:
+          cpus: '0.1'     
+          memory: '256M'
+    networks:
+      - my-network 
+  nestjs:
+    build:
+      context:  ../../uploader
+      dockerfile: Dockerfile.dev
+    image: nestjs-app:latest
+    container_name: nestjs_app_container
+    ports:
+      - "3100:3000"
+    environment:
+      NODE_ENV: development
+      MINIO_ENDPOINT: minio1
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: false
+      MINIO_ACCESS_KEY: lm3YonqLGhBDVgrGtCJc
+      MINIO_SECRET_KEY: LKkrF7nkTdWQaje7SdgmSWbX2pscV4HCQGSgeqxg
+
+      MONGODB_URI: mongodb://root:root@mongo:27017
+      MONGODB_POOL_SIZE: 10
+      MONGODB_CONNECT_TIMEOUT_MS: 30000
+      MONGODB_SOCKET_TIMEOUT_MS: 45000
+
+      KAFFKA_CLIENT_ID: 123
+      KAFFKA_SERVICE: kafka1:19092
+      KAFKA_MESSAGE_BROCKER_IMAGE_RESOLUTION_TOPIC: "upload-image-resolution"
+
+    command: npm run start:dev
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'     
+          memory: '512M'   
+        reservations:
+          cpus: '0.1'     
+          memory: '256M'
+    networks:
+      - my-network
+      
+    depends_on:
+      - kafka1
+      - mongo
+      - minio1
 
 ## By default this config uses default local driver,
 ## For custom volumes replace with volume driver configuration.
@@ -119,3 +255,7 @@ volumes:
   data3-2:
   data4-1:
   data4-2:
+
+networks:
+  my-network:
+    driver: bridge

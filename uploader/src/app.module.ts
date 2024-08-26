@@ -29,6 +29,6 @@ export class AppModule implements OnApplicationBootstrap {
         .then((res) => {
           console.log(res);
         });
-    }, 1000);
+    }, 1);
   }
 }
