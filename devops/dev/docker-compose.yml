@@ -1,0 +1,261 @@
+version: "3.7"
+
+# Settings and configurations that are common for all containers
+x-minio-common: &minio-common
+  image: quay.io/minio/minio:RELEASE.2024-08-17T01-24-54Z
+  command: server --console-address ":9001" http://minio{1...4}/data{1...2}
+  expose:
+    - "9000"
+    - "9001"
+  # environment:
+  # MINIO_ROOT_USER: minioadmin
+  # MINIO_ROOT_PASSWORD: minioadmin
+  healthcheck:
+    test: ["CMD", "mc", "ready", "local"]
+    interval: 5s
+    timeout: 5s
+    retries: 5
+
+# starts 4 docker containers running minio server instances.
+# using nginx reverse proxy, load balancing, you can access
+# it through port 9000.
+services:
+  minio1:
+    <<: *minio-common
+    hostname: minio1
+    volumes:
+      - data1-1:/data1
+      - data1-2:/data2
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'     
+          memory: '512M'   
+        reservations:
+          cpus: '0.25'     
+          memory: '256M' 
+
+  minio2:
+    <<: *minio-common
+    hostname: minio2
+    volumes:
+      - data2-1:/data1
+      - data2-2:/data2
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'     
+          memory: '512M'   
+        reservations:
+          cpus: '0.25'     
+          memory: '256M' 
+
+  minio3:
+    <<: *minio-common
+    hostname: minio3
+    volumes:
+      - data3-1:/data1
+      - data3-2:/data2
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'     
+          memory: '512M'   
+        reservations:
+          cpus: '0.25'     
+          memory: '256M' 
+
+  minio4:
+    <<: *minio-common
+    hostname: minio4
+    volumes:
+      - data4-1:/data1
+      - data4-2:/data2
+
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'     
+          memory: '512M'   
+        reservations:
+          cpus: '0.25'     
+          memory: '256M' 
+
+  nginx:
+    image: nginx:1.19.2-alpine
+    hostname: nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    depends_on:
+      - minio1
+      - minio2
+      - minio3
+      - minio4
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'     
+          memory: '512M'   
+        reservations:
+          cpus: '0.25'     
+          memory: '256M' 
+  mongo:
+    image: mongo
+    environment:
+      MONGO_INITDB_DATABASEL: mongo
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    ports:
+      - 27017:27017
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'     
+          memory: '512M'   
+        reservations:
+          cpus: '0.25'     
+          memory: '256M' 
+    networks:
+      - my-network 
+  zoo1:
+    image: confluentinc/cp-zookeeper
+    hostname: zoo1
+    container_name: zoo1
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_SERVERS: zoo1:2888:3888
+    deploy:
+      resources:
+        limits:
+          cpus: '1'     
+          memory: '512M'   
+        reservations:
+          cpus: '0.5'     
+          memory: '256M' 
+    networks:
+      - my-network 
+
+  kafka1:
+    image: confluentinc/cp-kafka
+    hostname: kafka1
+    container_name: kafka1
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+      - "9999:9999"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka1:19092,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092,DOCKER://host.docker.internal:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181"
+      KAFKA_BROKER_ID: 1
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_JMX_PORT: 9999
+      KAFKA_JMX_HOSTNAME: ${DOCKER_HOST_IP:-127.0.0.1}
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
+      KAFKA_CREATE_TOPICS: "upload-image-resolution:1:1"
+      
+    depends_on:
+      - zoo1
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'     
+          memory: '512M'   
+        reservations:
+          cpus: '0.25'     
+          memory: '256M' 
+    networks:
+      - my-network 
+  fastapi-app:
+    build:
+      context: ../../processing   # Path to the directory containing the Dockerfile
+      dockerfile: Dockerfile 
+    image: fastapi-app:latest
+    container_name: fastapi_app_container
+    depends_on:
+      - kafka1
+    ports:
+      - "8999:8000"
+    environment:
+      IMAGE_RESOLUTION_MB_TOPIC: upload-image-resolution
+      IMAGE_RESOLUTION_MB_BOOTSTRAP_SERVERS: kafka1:19092
+      IMAGE_RESOLUTION_MB_GROUP_ID: my-group
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'     
+          memory: '512M'   
+        reservations:
+          cpus: '0.1'     
+          memory: '256M'
+    networks:
+      - my-network 
+  nestjs:
+    build:
+      context:  ../../uploader
+      dockerfile: Dockerfile.dev
+    image: nestjs-app:latest
+    container_name: nestjs_app_container
+    ports:
+      - "3100:3000"
+    environment:
+      NODE_ENV: development
+      MINIO_ENDPOINT: minio1
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: false
+      MINIO_ACCESS_KEY: lm3YonqLGhBDVgrGtCJc
+      MINIO_SECRET_KEY: LKkrF7nkTdWQaje7SdgmSWbX2pscV4HCQGSgeqxg
+
+      MONGODB_URI: mongodb://root:root@mongo:27017
+      MONGODB_POOL_SIZE: 10
+      MONGODB_CONNECT_TIMEOUT_MS: 30000
+      MONGODB_SOCKET_TIMEOUT_MS: 45000
+
+      KAFFKA_CLIENT_ID: 123
+      KAFFKA_SERVICE: kafka1:19092
+      KAFKA_MESSAGE_BROCKER_IMAGE_RESOLUTION_TOPIC: "upload-image-resolution"
+
+    command: npm run start:dev
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'     
+          memory: '512M'   
+        reservations:
+          cpus: '0.1'     
+          memory: '256M'
+    networks:
+      - my-network
+      
+    depends_on:
+      - kafka1
+      - mongo
+      - minio1
+
+## By default this config uses default local driver,
+## For custom volumes replace with volume driver configuration.
+volumes:
+  data1-1:
+  data1-2:
+  data2-1:
+  data2-2:
+  data3-1:
+  data3-2:
+  data4-1:
+  data4-2:
+
+networks:
+  my-network:
+    driver: bridge
