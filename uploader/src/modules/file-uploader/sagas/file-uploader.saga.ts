@@ -1,6 +1,7 @@
 import { ICommand, ofType, Saga } from '@nestjs/cqrs';
-import { map, Observable, of } from 'rxjs';
+import { bufferTime, map, Observable, of } from 'rxjs';
 import { FileUploadedEvent } from '../events/file-uploaded.event';
+import { PushMgsToMessageBrockerCommand } from '../commands/impl/push-mgs-to-message-broker.command';
 
 export class FileUploaderSaga {
   @Saga()
@@ -8,7 +9,7 @@ export class FileUploaderSaga {
     return events$.pipe(
       ofType(FileUploadedEvent),
       map((event) => {
-        return of(true);
+        return new PushMgsToMessageBrockerCommand(event.file);
       }),
     );
   };

@@ -1,31 +1,61 @@
-import { CommandHandler, EventPublisher, ICommandHandler } from '@nestjs/cqrs';
+import {
+  CommandHandler,
+  EventBus,
+  EventPublisher,
+  ICommandHandler,
+} from '@nestjs/cqrs';
 import { UploadFilesCommand } from '../impl/upload-files.command';
 import { Inject, NotFoundException } from '@nestjs/common';
-
-import {
-  MINIO_PROVIDER_CONNECTION,
-  MONGODB_PROVIDER_CONNECTION,
-} from 'src/infrastructure';
-import { Client } from 'minio';
-import { Mongoose } from 'mongoose';
 import { FileMetadata } from '../../models/file-metadata.model';
+import { UploaderObjectStoreRepository } from '../../repository/uploader-object-store.repository';
+import { UploaderMetadataStoreRepository } from '../../repository/uploader-metadata-store.repository';
+import { mapFileMetadataToDocument } from '../../models/file-metadata.mapper';
+import { FileUploadedEvent } from '../../events/file-uploaded.event';
 
 @CommandHandler(UploadFilesCommand)
 export class UploadFileCommandHandler
   implements ICommandHandler<UploadFilesCommand>
 {
   // TODO: Move this logic to repository.
-  @Inject(MINIO_PROVIDER_CONNECTION) private readonly objectStorage: Client;
+  @Inject()
+  private readonly objectStoreRespository: UploaderObjectStoreRepository;
 
-  @Inject(MONGODB_PROVIDER_CONNECTION)
-  private readonly documentStorage: Mongoose;
+  @Inject()
+  private readonly metadataStoreRespository: UploaderMetadataStoreRepository;
 
-  constructor(private readonly publisher: EventPublisher) {}
+  constructor(private readonly eventBus: EventBus) {}
+
+  private async uploadFileToMinIO(bucketName: string, file: FileMetadata) {
+    try {
+      return this.objectStoreRespository.putObject(
+        bucketName,
+        file.args.fileName,
+        file.args.fileMulter.buffer,
+        file.args.fileMulter.buffer.length,
+        { 'Content-Type': file.args.fileMulter.mimetype },
+      );
+    } catch (error) {
+      throw new Error(`Failed to upload file to MinIO: ${error.message}`);
+    }
+  }
+
+  private async saveFileMetadata(file: FileMetadata) {
+    try {
+      const fileResult = await this.metadataStoreRespository.saveFileMetadata(
+        mapFileMetadataToDocument(file),
+      );
+      return fileResult;
+    } catch (error) {
+      throw new Error(
+        `Failed to save file metadata to MongoDB: ${error.message}`,
+      );
+    }
+  }
 
   async execute(command: UploadFilesCommand) {
     const { bucketName, files } = command;
 
-    if (!(await this.objectStorage.bucketExists(bucketName))) {
+    if (!(await this.objectStoreRespository.bucketExists(bucketName))) {
       throw new NotFoundException('Bukket not exist');
     }
 
@@ -63,33 +93,9 @@ export class UploadFileCommandHandler
 
         uploadedResult.push(result);
       }
+      this.eventBus.publish(new FileUploadedEvent(file));
     }
+
     return uploadedResult;
-  }
-
-  private async uploadFileToMinIO(bucketName: string, file: FileMetadata) {
-    try {
-      return this.objectStorage.putObject(
-        bucketName,
-        file.args.fileName,
-        file.args.fileMulter.buffer,
-        file.args.fileMulter.buffer.length,
-        { 'Content-Type': file.args.fileMulter.mimetype },
-      );
-    } catch (error) {
-      throw new Error(`Failed to upload file to MinIO: ${error.message}`);
-    }
-  }
-
-  private async saveFileMetadata(file: FileMetadata) {
-    try {
-      // await this.documentStorage.;
-      console.log(file);
-      return { oke: 'be' };
-    } catch (error) {
-      throw new Error(
-        `Failed to save file metadata to MongoDB: ${error.message}`,
-      );
-    }
   }
 }

@@ -1,1 +1,1 @@
-Bench my system.
+locust -f uploader_bench.py

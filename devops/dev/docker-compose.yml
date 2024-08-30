@@ -118,8 +118,31 @@ services:
         reservations:
           cpus: '0.25'     
           memory: '256M' 
+    volumes:
+      - ./workspace:/workspace
+      - type: volume
+        source: mongodb_data_volume
+        target: /data/db
     networks:
       - my-network 
+  mongo-express:
+    image: mongo-express
+    container_name: mongo-express
+    ports:
+      - 28081:8081
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_BASICAUTH_USERNAME: root
+      ME_CONFIG_BASICAUTH_PASSWORD: root
+      #ME_CONFIG_MONGODB_AUTH_DATABASE: admin
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: root
+      ME_CONFIG_MONGODB_URL: mongo://root:root@mongo:27017/ 
+    depends_on:
+      - mongo
+    networks:
+      - my-network 
+  
   zoo1:
     image: confluentinc/cp-zookeeper
     hostname: zoo1
@@ -255,7 +278,8 @@ volumes:
   data3-2:
   data4-1:
   data4-2:
-
+  mongodb_data_volume:
+    driver: local    
 networks:
   my-network:
     driver: bridge
