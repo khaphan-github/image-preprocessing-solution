@@ -14,6 +14,9 @@ export class FileMetadataEntity {
   @Prop({ required: true })
   fileName: string;
 
+  @Prop({ required: false })
+  fileDisplayName: string;
+
   @Prop({ required: true })
   fileType: string;
 

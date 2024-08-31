@@ -34,7 +34,8 @@ services:
         reservations:
           cpus: '0.25'     
           memory: '256M' 
-
+    networks:
+      - my-network
   minio2:
     <<: *minio-common
     hostname: minio2
@@ -49,7 +50,8 @@ services:
         reservations:
           cpus: '0.25'     
           memory: '256M' 
-
+    networks:
+      - my-network
   minio3:
     <<: *minio-common
     hostname: minio3
@@ -64,7 +66,8 @@ services:
         reservations:
           cpus: '0.25'     
           memory: '256M' 
-
+    networks:
+        - my-network
   minio4:
     <<: *minio-common
     hostname: minio4
@@ -80,7 +83,8 @@ services:
         reservations:
           cpus: '0.25'     
           memory: '256M' 
-
+    networks:
+        - my-network
   nginx:
     image: nginx:1.19.2-alpine
     hostname: nginx
@@ -102,6 +106,8 @@ services:
         reservations:
           cpus: '0.25'     
           memory: '256M' 
+    networks:
+      - my-network
   mongo:
     image: mongo
     environment:
@@ -266,7 +272,19 @@ services:
       - kafka1
       - mongo
       - minio1
-
+  # TODO: mONITOR SYSTEM
+  # prometheus:
+  #   image: prom/prometheus
+  #   ports:
+  #     - 9900:9090
+  #   networks:
+  #     - my-network
+  # grafana:
+  #   image: grafana/grafana
+  #   ports:
+  #     - 3999:3000
+  #   networks:
+  #     - my-network
 ## By default this config uses default local driver,
 ## For custom volumes replace with volume driver configuration.
 volumes:
@@ -280,6 +298,7 @@ volumes:
   data4-2:
   mongodb_data_volume:
     driver: local    
+  
 networks:
   my-network:
     driver: bridge

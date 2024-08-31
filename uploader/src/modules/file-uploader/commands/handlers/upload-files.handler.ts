@@ -16,10 +16,8 @@ import { FileUploadedEvent } from '../../events/file-uploaded.event';
 export class UploadFileCommandHandler
   implements ICommandHandler<UploadFilesCommand>
 {
-  // TODO: Move this logic to repository.
   @Inject()
   private readonly objectStoreRespository: UploaderObjectStoreRepository;
-
   @Inject()
   private readonly metadataStoreRespository: UploaderMetadataStoreRepository;
 

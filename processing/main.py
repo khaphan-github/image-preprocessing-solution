@@ -14,7 +14,7 @@ async def startup_event():
     consumer = AIOKafkaConsumer(
         IMAGE_RESOLUTION_MB_TOPIC,
         bootstrap_servers=IMAGE_RESOLUTION_MB_BOOTSTRAP_SERVERS,
-        auto_offset_reset='earliest',  # or 'latest' depending on your needs
+        auto_offset_reset='latest',  # or 'latest' depending on your needs
         enable_auto_commit=True,
         group_id=IMAGE_RESOLUTION_MB_GROUP_ID
     )
@@ -25,7 +25,6 @@ async def startup_event():
         try:
             # Consume messages
             async for msg in consumer:
-                time.sleep(1)
                 print("consumed: ", msg.topic, msg.partition, msg.offset,
                       msg.key, msg.value, msg.timestamp)
         except Exception as e:

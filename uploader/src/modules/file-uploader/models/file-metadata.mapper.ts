@@ -8,6 +8,7 @@ export const mapDocumentToFileMetadata = (
   return new FileMetadata({
     _id: doc._id.toString(),
     fileName: doc.fileName,
+    fileDisplayName: doc.fileDisplayName,
     fileType: doc.fileType,
     size: doc.size,
     uploaderId: doc.uploaderId,
@@ -40,6 +41,7 @@ export const mapFileMetadataToDocument = (
   return {
     _id: fileMetadata.args._id,
     fileName: fileMetadata.args.fileName,
+    fileDisplayName: fileMetadata.args.fileDisplayName,
     fileType: fileMetadata.args.fileType,
     size: fileMetadata.args.size,
     uploaderId: fileMetadata.args.uploaderId,

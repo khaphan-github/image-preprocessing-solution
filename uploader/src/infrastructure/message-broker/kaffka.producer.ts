@@ -9,8 +9,8 @@ export class KafkaProducerService {
 
   constructor() {
     const kaffkaClientId = process.env.KAFFKA_CLIENT_ID;
-    // const kaffkaService = process.env.KAFFKA_SERVICE;
-    const kaffkaService = 'kafka1:19092';
+    const kaffkaService = process.env.KAFFKA_SERVICE;
+    // const kaffkaService = 'kafka1:19092';
     console.log(
       `KafkaClientID: ${kaffkaClientId} - KafkaService: ${kaffkaService}`,
     );
