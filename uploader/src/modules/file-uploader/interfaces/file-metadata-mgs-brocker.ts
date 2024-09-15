@@ -6,5 +6,6 @@ export interface FileMetadataMessageBrockerItem {
     preSignUrl: string; // https://minio/presiton url
     resolution: string; // '1920x2020'
   }>;
+  fileName: string;
   timeStamp: Date;
 }

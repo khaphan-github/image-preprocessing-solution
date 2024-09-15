@@ -3,3 +3,5 @@ uvicorn
 aiokafka
 python-dotenv
 minio
+opencv-python
+numpy

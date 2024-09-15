@@ -18,11 +18,24 @@ minio_client = Minio(
 
 def download_image(bucket_name, object_name):
     try:
+        # Get object metadata (file size, content type, etc.)
+        object_stat = minio_client.stat_object(bucket_name, object_name)
+        file_size = object_stat.size  # File size in bytes
+        file_name = object_stat.object_name
+
+        logging.info(f"File Name: {file_name}")
+        logging.info(f"File Size: {file_size / (1024 * 1024):.2f} MB")
+
+        # Download the file content
         response = minio_client.get_object(bucket_name, object_name)
         file_content = response.read()
+
+        # Always close the response after reading
         response.close()
         response.release_conn()
-        return file_content
+
+        return file_content, file_name
+
     except S3Error as e:
-        logging.info(f"An error occurred: {e}")
-        return None
+        logging.error(f"An error occurred: {e}")
+        return None, None

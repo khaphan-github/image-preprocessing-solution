@@ -145,6 +145,7 @@ export class FileMetadata extends AggregateRoot {
     return {
       fileId: this.args._id,
       bucketName: this.args.bucketName,
+      fileName: this.args.fileName,
       filePath: this.args.fileUrl,
       resolutions: [],
       timeStamp: this.args.uploadDate,

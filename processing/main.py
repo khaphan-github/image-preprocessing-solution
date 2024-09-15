@@ -6,6 +6,7 @@ import asyncio
 import logging
 import json
 from infrastructure.minio import *
+from image_processing.resolution import *
 
 app = FastAPI()
 
@@ -18,20 +19,6 @@ logging.basicConfig(
     ]
 )
 
-def cpu_intensive_task():
-    import multiprocessing
-    """A simple function to consume CPU by performing calculations."""
-    print(f"Starting CPU-intensive task on process {multiprocessing.current_process().name}")
-    start_time = time.time()
-    
-    # Perform some heavy computations
-    result = 0
-    for i in range(10**7):
-        result += i ** 2
-
-    end_time = time.time()
-    print(f"Task completed in {end_time - start_time:.2f} seconds")
-    
 consumer: AIOKafkaConsumer = None
 
 @app.on_event("startup")
@@ -55,10 +42,22 @@ async def startup_event():
                 logging.info(message_info)
                 
                 data = json.loads(msg.value.decode('utf-8'))
-                download_image(
-                    bucket_name=data['bucketName'], 
-                    object_name='00046fad-1b75-4fca-b7be-c93a3549f2f1'
-                )
+                try:
+                    
+                    image_content, file_name = download_image(
+                        bucket_name=data['bucketName'], 
+                        object_name=data['fileName']
+                    )
+    
+                    if image_content and file_name:
+                        save_scaled_images(image_content, file_name, quality=85, scale_factor=0.75, output_format='jpeg')
+                        save_scaled_images(image_content, file_name, quality=20, scale_factor=0.75, output_format='jpeg')
+                        save_scaled_images(image_content, file_name, quality=50, scale_factor=0.75, output_format='jpeg')
+                        save_scaled_images(image_content, file_name, quality=10, scale_factor=0.75, output_format='jpeg')
+                        
+                except Exception as e:
+                    logging.error(f"Error Download: {e}")
+                
         except Exception as e:
             logging.error(f"Error consuming messages: {e}")
         finally:

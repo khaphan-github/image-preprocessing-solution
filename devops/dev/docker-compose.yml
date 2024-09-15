@@ -209,6 +209,9 @@ services:
       MINIO_USE_SSL: false
       MINIO_ACCESS_KEY: lm3YonqLGhBDVgrGtCJc
       MINIO_SECRET_KEY: LKkrF7nkTdWQaje7SdgmSWbX2pscV4HCQGSgeqxg
+    volumes:
+      - ./out_img:/out_img
+
     
     deploy:
       resources:
