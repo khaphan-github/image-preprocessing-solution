@@ -61,7 +61,7 @@ export class UploadFileCommandHandler
     const extractedFiles: Array<FileMetadata> = [];
     for (const file of files) {
       const fileMetadata = new FileMetadata();
-      fileMetadata.extractFromFileByDefaultPolicy(file);
+      fileMetadata.extractFromFileByDefaultPolicy(bucketName, file);
       fileMetadata.commit();
       extractedFiles.push(fileMetadata);
     }
@@ -78,7 +78,6 @@ export class UploadFileCommandHandler
       try {
         uploadedObjectInfo = await this.uploadFileToMinIO(bucketName, file);
         fileMetadata = await this.saveFileMetadata(file);
-
         result.uploadedObjectInfo = uploadedObjectInfo;
         result.fileMetadata = fileMetadata;
 

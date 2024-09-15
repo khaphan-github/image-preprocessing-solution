@@ -1,60 +1,66 @@
-import { Injectable } from '@nestjs/common';
-import { Kafka, Producer, ProducerRecord } from 'kafkajs';
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Kafka, Partitioners, Producer, ProducerRecord } from 'kafkajs';
 
 @Injectable()
 export class KafkaProducerService {
   private producer: Producer;
-
   private shouldConnectedToKaffka: boolean;
 
-  constructor() {
-    const kaffkaClientId = process.env.KAFFKA_CLIENT_ID;
-    const kaffkaService = process.env.KAFFKA_SERVICE;
-    // const kaffkaService = 'kafka1:19092';
-    console.log(
+  private readonly logger = new Logger(KafkaProducerService.name);
+
+  constructor(private readonly config: ConfigService) {}
+
+  async connectToKafka() {
+    const kaffkaClientId = this.config.get<string>('KAFKA_CLIENT_ID');
+    const kaffkaService = this.config.get<string>('KAFKA_SERVICE');
+    this.logger.log(
       `KafkaClientID: ${kaffkaClientId} - KafkaService: ${kaffkaService}`,
     );
     if (kaffkaClientId && kaffkaService) {
       // TOTO: Load in environment
       this.producer = new Kafka({
         brokers: [kaffkaService], // Update with your Kafka broker's address
-        clientId: 'kaf-kafka-client-prodcer',
-      }).producer();
+        clientId: kaffkaClientId,
+        retry: {
+          retries: 3,
+        },
+      }).producer({
+        createPartitioner: Partitioners.LegacyPartitioner,
+      });
 
-      this.producer
-        .connect()
-        .then(() => {
-          this.shouldConnectedToKaffka = true;
-          console.log(`Connected to Kafka ${new Date()}`);
-        })
-        .catch((err) => {
-          console.error(err);
-          this.shouldConnectedToKaffka = false;
-        });
+      try {
+        await this.producer.connect();
+        this.shouldConnectedToKaffka = true;
+        this.logger.log(`Connected to Kafka ${new Date()}`);
+      } catch (err) {
+        this.logger.error(err);
+        this.shouldConnectedToKaffka = false;
+      }
     } else {
       this.shouldConnectedToKaffka = false;
-      console.log(`Unable to connect with kaffka logs`);
+      this.logger.log(`Unable to connect with kaffka logs`);
     }
   }
 
-  produceMessage(topic: string, message: string) {
+  async produceMessage(topic: string, message: string) {
+    if (!this.shouldConnectedToKaffka) {
+      await this.connectToKafka();
+    }
     try {
-      if (this.shouldConnectedToKaffka) {
-        const producerRecord: ProducerRecord = {
-          topic,
-          messages: [{ value: message }],
-          acks: 1,
-        };
-        console.log(
-          `=> Send message to kafka... ${JSON.stringify(producerRecord)}`,
-        );
-        return this.producer.send(producerRecord);
-      } else {
-        console.log(`=> Send message to kafka but not connected yet`);
-        return Promise.resolve(false);
-      }
+      const producerRecord: ProducerRecord = {
+        topic,
+        messages: [{ value: message }],
+        acks: 1,
+      };
+      this.logger.log(
+        `=> Send message to kafka... ${JSON.stringify(producerRecord)}`,
+      );
+      return this.producer.send(producerRecord);
     } catch (error) {
-      console.log(`=> Send message to kafka but not connected yet ${error}`);
+      this.logger.log(
+        `=> Send message to kafka but not connected yet ${error}`,
+      );
       return Promise.resolve(false);
     }
   }

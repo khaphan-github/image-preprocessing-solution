@@ -14,6 +14,7 @@ export class FileMetadata extends AggregateRoot {
       _id: string | any;
 
       fileName: string;
+      bucketName: string,
       fileDisplayName: string;
       fileType: string;
       size: number;
@@ -52,6 +53,7 @@ export class FileMetadata extends AggregateRoot {
     this.args = {
       _id: args?._id || new Types.ObjectId(),
       fileName: args?.fileName || '',
+      bucketName: args?.bucketName || '',
       fileDisplayName: args?.fileDisplayName || '',
       fileType: args?.fileType || '',
       size: args?.size || 0,
@@ -89,8 +91,9 @@ export class FileMetadata extends AggregateRoot {
    * Extrac info from file to without chunksize.
    * @param file
    */
-  extractFromFileByDefaultPolicy(file: Express.Multer.File) {
+  extractFromFileByDefaultPolicy(bucketName: string,file: Express.Multer.File) {
     this.args['_id'] = new Types.ObjectId();
+    this.args['bucketName'] = bucketName;
 
     // File info
     this.args['fileName'] = uuidv4();
@@ -141,6 +144,8 @@ export class FileMetadata extends AggregateRoot {
   getMgsBrockerMessage(): FileMetadataMessageBrockerItem {
     return {
       fileId: this.args._id,
+      bucketName: this.args.bucketName,
+      fileName: this.args.fileName,
       filePath: this.args.fileUrl,
       resolutions: [],
       timeStamp: this.args.uploadDate,
