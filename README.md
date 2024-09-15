@@ -3,8 +3,7 @@ TODO: Dec.
 # Table of content
 - Todo needs to implement
 # 0: System architecture:
-![image](https://github.com/user-attachments/assets/12e10b9b-fef3-44d8-baa5-63943782235d)
-
+![image](https://github.com/user-attachments/assets/17070967-4eab-4f86-8183-73347b79b370)
 
 1. This service allows clients to upload files such as images, videos, and other media types, similar to Google Drive. Our algorithms support a large number of concurrent user uploads ([see our benchmark](#)).  
 2. After the file is uploaded, we offer several optional pre-processing features that can be enabled or disabled, including:
