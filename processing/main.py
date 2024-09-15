@@ -4,6 +4,8 @@ from env import *  # Ensure you have these variables defined correctly
 from aiokafka import AIOKafkaConsumer
 import asyncio
 import logging
+import json
+from infrastructure.minio import *
 
 app = FastAPI()
 
@@ -51,9 +53,14 @@ async def startup_event():
             async for msg in consumer:
                 message_info = f"consumed: {msg.topic}, {msg.partition}, {msg.offset}, {msg.key}, {msg.value}, {msg.timestamp}"
                 logging.info(message_info)
-                cpu_intensive_task()
+                
+                data = json.loads(msg.value.decode('utf-8'))
+                download_image(
+                    bucket_name=data['bucketName'], 
+                    object_name='00046fad-1b75-4fca-b7be-c93a3549f2f1'
+                )
         except Exception as e:
-            print(f"Error consuming messages: {e}")
+            logging.error(f"Error consuming messages: {e}")
         finally:
             await consumer.stop()
 

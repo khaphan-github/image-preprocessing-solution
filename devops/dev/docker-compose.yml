@@ -131,23 +131,6 @@ services:
         target: /data/db
     networks:
       - my-network 
-  mongo-express:
-    image: mongo-express
-    container_name: mongo-express
-    ports:
-      - 28081:8081
-    environment:
-      ME_CONFIG_MONGODB_SERVER: mongo
-      ME_CONFIG_BASICAUTH_USERNAME: root
-      ME_CONFIG_BASICAUTH_PASSWORD: root
-      #ME_CONFIG_MONGODB_AUTH_DATABASE: admin
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: root
-      ME_CONFIG_MONGODB_URL: mongo://root:root@mongo:27017/ 
-    depends_on:
-      - mongo
-    networks:
-      - my-network 
   
   zoo1:
     image: confluentinc/cp-zookeeper
@@ -220,6 +203,12 @@ services:
       IMAGE_RESOLUTION_MB_TOPIC: upload-image-resolution
       IMAGE_RESOLUTION_MB_BOOTSTRAP_SERVERS: kafka1:19092
       IMAGE_RESOLUTION_MB_GROUP_ID: my-group
+
+      MINIO_ENDPOINT: minio1
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: false
+      MINIO_ACCESS_KEY: lm3YonqLGhBDVgrGtCJc
+      MINIO_SECRET_KEY: LKkrF7nkTdWQaje7SdgmSWbX2pscV4HCQGSgeqxg
     
     deploy:
       resources:
@@ -243,7 +232,7 @@ services:
       NODE_ENV: development
       MINIO_ENDPOINT: minio1
       MINIO_PORT: 9000
-      MINIO_USE_SSL: false
+      MINIO_USE_SSL: 'false'
       MINIO_ACCESS_KEY: lm3YonqLGhBDVgrGtCJc
       MINIO_SECRET_KEY: LKkrF7nkTdWQaje7SdgmSWbX2pscV4HCQGSgeqxg
 
@@ -252,8 +241,8 @@ services:
       MONGODB_CONNECT_TIMEOUT_MS: 30000
       MONGODB_SOCKET_TIMEOUT_MS: 45000
 
-      KAFFKA_CLIENT_ID: 123
-      KAFFKA_SERVICE: kafka1:19092
+      KAFKA_CLIENT_ID: '123'
+      KAFKA_SERVICE: kafka1:19092
       KAFKA_MESSAGE_BROCKER_IMAGE_RESOLUTION_TOPIC: "upload-image-resolution"
 
     command: npm run start:dev

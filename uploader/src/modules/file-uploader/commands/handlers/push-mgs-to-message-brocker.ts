@@ -14,6 +14,6 @@ export class PushMgsToMessageBrockerCommandHandler
   execute(command: PushMgsToMessageBrockerCommand): Promise<any> {
     const { file } = command;
     const mgs = JSON.stringify(file.getMgsBrockerMessage());
-    return this.messageBroker.produceMessage(this.TOPIC ?? 'upload-image-resolution', mgs);
+    return this.messageBroker.produceMessage(this.TOPIC, mgs);
   }
 }

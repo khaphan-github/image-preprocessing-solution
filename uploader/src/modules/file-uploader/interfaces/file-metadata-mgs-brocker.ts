@@ -1,5 +1,6 @@
 export interface FileMetadataMessageBrockerItem {
   fileId: string;
+  bucketName: string;
   filePath?: string;
   resolutions: Array<{
     preSignUrl: string; // https://minio/presiton url
