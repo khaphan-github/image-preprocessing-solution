@@ -4,7 +4,7 @@ import random
 
 # Define the class for user behavior
 class FileUploadUser(HttpUser):
-    wait_time = between(0.001, 1)  # Minimize wait time to achieve high request rate
+    wait_time = between(0.001, 30)  # Minimize wait time to achieve high request rate
 
     @task
     def upload_files(self):
@@ -36,6 +36,6 @@ class FileUploadUser(HttpUser):
 class CustomShape(LoadTestShape):
     def tick(self):
         # Target 1000 requests per second
-        user_count = 1200
-        spawn_rate = 1200
+        user_count = 12000
+        spawn_rate = 12000
         return user_count, spawn_rate
