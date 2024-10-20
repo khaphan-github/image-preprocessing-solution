@@ -94,3 +94,7 @@ Color Enhancement: Adjust image contrast, brightness, and saturation to make col
 # 3: How to integrate it into your current system:
 # 4: Setup and scale with k8s:
 # 5. API document
+# 6. TODO:
+[] How estimate number of message one worker need handle?
+[] How handle error when a worker get message then die?
+[] How create context to test error when worker handle failure?
